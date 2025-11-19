@@ -1,0 +1,229 @@
+@startuml Diagrama de Atividades - Processo de Agendamento
+!theme plain
+
+title Diagrama de Atividades - Processo Completo de Agendamento
+
+|#LightBlue|Cliente|
+|#LightGreen|Sistema|
+|#LightYellow|Barbeiro|
+|#Pink|Gerente|
+
+|Cliente|
+start
+:Acessar sistema de agendamento;
+:Fazer login com credenciais;
+
+|Sistema|
+:Validar credenciais;
+
+if (Credenciais válidas?) then (sim)
+  :Criar sessão do usuário;
+  :Carregar perfil e permissões;
+else (não)
+  :Exibir mensagem de erro;
+  |Cliente|
+  stop
+endif
+
+|Cliente|
+:Selecionar opção "Novo Agendamento";
+
+|Sistema|
+:Exibir formulário de agendamento;
+:Carregar lista de serviços disponíveis;
+
+fork
+  :Buscar barbeiros cadastrados;
+fork again
+  :Verificar horários disponíveis;
+fork again
+  :Carregar tabela de preços;
+end fork
+
+|Cliente|
+:Selecionar tipo de serviço desejado;
+
+|Sistema|
+:Filtrar barbeiros por especialidade;
+:Atualizar lista de barbeiros disponíveis;
+:Exibir duração estimada e preço;
+
+|Cliente|
+:Escolher barbeiro preferido;
+
+|Sistema|
+:Carregar agenda do barbeiro selecionado;
+:Identificar horários livres;
+
+if (Barbeiro tem horários disponíveis?) then (sim)
+  :Exibir calendário com datas disponíveis;
+else (não)
+  :Sugerir outros barbeiros;
+  :Mostrar próximas datas com disponibilidade;
+  |Cliente|
+  :Selecionar outro barbeiro ou data;
+endif
+
+|Cliente|
+:Selecionar data desejada;
+:Escolher horário disponível;
+
+|Sistema|
+partition "Validação de Agendamento" #LightCyan {
+  :Verificar disponibilidade em tempo real;
+  
+  fork
+    :Validar conflitos de agenda;
+  fork again
+    :Verificar horário de funcionamento;
+  fork again
+    :Calcular tempo necessário para o serviço;
+  fork again
+    :Verificar intervalo mínimo entre agendamentos;
+  end fork
+  
+  if (Todas validações OK?) then (sim)
+    :Reservar horário temporariamente;
+    note right
+      Reserva temporária por 5 minutos
+      para evitar conflitos
+    end note
+  else (não)
+    :Informar problema encontrado;
+    :Sugerir alternativas;
+    |Cliente|
+    backward:Selecionar nova data/horário;
+  endif
+}
+
+|Sistema|
+:Exibir resumo do agendamento;
+:Mostrar valor total;
+:Solicitar confirmação;
+
+|Cliente|
+if (Confirmar agendamento?) then (sim)
+  |Sistema|
+  partition "Processamento do Agendamento" #LightGray {
+    :Gerar código único do agendamento;
+    :Registrar agendamento no banco de dados;
+    :Atualizar agenda do barbeiro;
+    :Bloquear horário na agenda geral;
+    
+    fork
+      :Enviar e-mail de confirmação ao cliente;
+    fork again
+      :Enviar notificação push ao cliente;
+    fork again
+      |Barbeiro|
+      :Receber notificação de novo agendamento;
+      :Visualizar detalhes do agendamento;
+    fork again
+      |Sistema|
+      :Registrar log de auditoria;
+    fork again
+      :Agendar lembretes automáticos;
+      note right
+        Lembretes:
+        - 24h antes
+        - 2h antes
+        - 30min antes
+      end note
+    end fork
+  }
+  
+  |Sistema|
+  :Exibir confirmação com código do agendamento;
+  :Disponibilizar opções de gerenciamento;
+  
+else (não)
+  :Cancelar reserva temporária;
+  :Liberar horário;
+  |Cliente|
+  :Retornar ao formulário;
+endif
+
+|Cliente|
+:Visualizar agendamento confirmado;
+
+partition "Acompanhamento Paralelo" #Yellow {
+  |Sistema|
+  fork
+    repeat
+      :Monitorar proximidade do agendamento;
+      :Enviar lembrete;
+      backward:Aguardar próximo checkpoint;
+    repeat while (Data do agendamento não chegou?)
+  fork again
+    |Barbeiro|
+    :Preparar materiais e equipamentos;
+    :Revisar histórico do cliente;
+  fork again
+    |Gerente|
+    :Monitorar dashboard de agendamentos;
+    :Verificar taxa de ocupação;
+  end fork
+}
+
+|Cliente|
+floating note right
+  Cliente pode a qualquer momento:
+  - Cancelar agendamento
+  - Remarcar horário
+  - Adicionar observações
+end note
+
+|Sistema|
+if (Cliente compareceu?) then (sim)
+  |Barbeiro|
+  :Realizar atendimento;
+  :Registrar serviços executados;
+  
+  |Sistema|
+  :Atualizar status para "Concluído";
+  :Processar pagamento;
+  :Solicitar avaliação do cliente;
+  
+  |Cliente|
+  :Avaliar atendimento;
+  :Deixar comentários;
+  
+  |Sistema|
+  :Registrar feedback;
+  :Atualizar métricas do barbeiro;
+  :Enviar agradecimento;
+  
+else (não)
+  |Sistema|
+  :Registrar não comparecimento;
+  :Aplicar política de no-show;
+  
+  if (Possui multa por falta?) then (sim)
+    :Calcular valor da multa;
+    :Gerar cobrança;
+    :Notificar cliente;
+  endif
+  
+  :Liberar horário para outros clientes;
+  
+  |Barbeiro|
+  :Receber notificação de falta;
+  :Atualizar disponibilidade;
+endif
+
+|Sistema|
+:Arquivar agendamento no histórico;
+:Atualizar estatísticas;
+:Gerar relatórios gerenciais;
+
+stop
+
+legend right
+  |= Cor |= Responsável |
+  |<#LightBlue> | Cliente |
+  |<#LightGreen> | Sistema |
+  |<#LightYellow> | Barbeiro |
+  |<#Pink> | Gerente |
+endlegend
+
+@enduml

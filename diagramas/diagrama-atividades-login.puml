@@ -1,0 +1,272 @@
+@startuml Diagrama de Atividades - Processo de Login
+!theme plain
+
+title Diagrama de Atividades - Processo de Autenticação e Login
+
+|#LightBlue|Usuário|
+|#LightGreen|Sistema Frontend|
+|#Yellow|Sistema Backend|
+|#Pink|Banco de Dados|
+
+|Usuário|
+start
+:Acessar página inicial do sistema;
+
+|Sistema Frontend|
+:Verificar estado de autenticação;
+
+if (Já possui sessão ativa?) then (sim)
+  |Sistema Backend|
+  :Validar token de sessão;
+  
+  if (Token válido e não expirado?) then (sim)
+    :Renovar token;
+    |Sistema Frontend|
+    :Redirecionar para dashboard;
+    stop
+  else (não)
+    :Limpar sessão expirada;
+  endif
+endif
+
+|Sistema Frontend|
+:Exibir tela de login;
+:Carregar componentes do formulário;
+
+fork
+  :Inicializar validadores de campo;
+fork again
+  :Configurar captcha (se necessário);
+fork again
+  :Verificar tentativas anteriores;
+end fork
+
+|Usuário|
+:Selecionar tipo de perfil;
+note right
+  Perfis disponíveis:
+  - Cliente
+  - Barbeiro
+  - Gerente/Admin
+end note
+
+:Inserir email;
+
+|Sistema Frontend|
+:Validar formato do email;
+
+if (Email válido?) then (não)
+  :Exibir erro de formato;
+  |Usuário|
+  backward:Corrigir email;
+endif
+
+|Usuário|
+:Inserir senha;
+
+|Sistema Frontend|
+:Verificar força da senha;
+:Mostrar/ocultar senha (toggle);
+
+|Usuário|
+:Clicar em "Entrar";
+
+|Sistema Frontend|
+partition "Validação Local" #LightCyan {
+  :Validar campos obrigatórios;
+  
+  if (Todos campos preenchidos?) then (sim)
+    :Desabilitar botão de submit;
+    :Exibir loading;
+  else (não)
+    :Destacar campos faltantes;
+    :Exibir mensagem de erro;
+    |Usuário|
+    backward:Preencher campos obrigatórios;
+  endif
+}
+
+:Preparar requisição de login;
+:Criptografar senha (client-side);
+
+|Sistema Backend|
+:Receber requisição de login;
+:Registrar tentativa de login;
+
+partition "Validação de Segurança" #Orange {
+  fork
+    :Verificar rate limiting;
+    note right
+      Máximo 5 tentativas
+      em 15 minutos
+    end note
+  fork again
+    :Validar origem da requisição;
+  fork again
+    :Verificar blacklist de IPs;
+  end fork
+  
+  if (Validações de segurança OK?) then (não)
+    :Registrar evento de segurança;
+    :Retornar erro 429 (Too Many Requests);
+    |Sistema Frontend|
+    :Exibir mensagem de bloqueio temporário;
+    :Mostrar tempo restante;
+    stop
+  endif
+}
+
+|Banco de Dados|
+:Buscar usuário por email e perfil;
+
+if (Usuário existe?) then (sim)
+  :Recuperar hash da senha;
+  :Recuperar dados do perfil;
+  :Verificar status da conta;
+else (não)
+  |Sistema Backend|
+  :Registrar tentativa inválida;
+  :Retornar erro genérico;
+  note right
+    Não revelar se email
+    existe ou não (segurança)
+  end note
+  |Sistema Frontend|
+  :Exibir "Credenciais inválidas";
+  |Usuário|
+  backward:Verificar credenciais;
+endif
+
+|Sistema Backend|
+:Comparar senha com hash;
+
+if (Senha correta?) then (sim)
+  
+  if (Conta ativa?) then (sim)
+    partition "Criação de Sessão" #LightGray {
+      :Gerar token JWT;
+      :Definir tempo de expiração;
+      :Criar refresh token;
+      
+      |Banco de Dados|
+      fork
+        :Salvar sessão ativa;
+      fork again
+        :Atualizar último login;
+      fork again
+        :Registrar IP e dispositivo;
+      fork again
+        :Incrementar contador de logins;
+      end fork
+    }
+    
+    |Sistema Backend|
+    :Preparar dados do usuário;
+    :Carregar permissões do perfil;
+    
+    switch (Tipo de Perfil)
+      case (Cliente)
+        :Carregar agendamentos do cliente;
+        :Configurar menu de cliente;
+      case (Barbeiro)
+        :Carregar agenda do barbeiro;
+        :Carregar clientes atendidos;
+        :Configurar menu de barbeiro;
+      case (Gerente)
+        :Carregar dashboard completo;
+        :Carregar estatísticas;
+        :Configurar menu administrativo;
+    endswitch
+    
+    :Retornar sucesso com token e dados;
+    
+    |Sistema Frontend|
+    :Armazenar token no localStorage;
+    :Armazenar refresh token (secure);
+    :Atualizar estado global (Redux/Context);
+    :Configurar interceptors de API;
+    
+    fork
+      :Iniciar timer de renovação de token;
+    fork again
+      :Carregar preferências do usuário;
+    fork again
+      :Sincronizar notificações;
+    end fork
+    
+    :Exibir mensagem de boas-vindas;
+    :Redirecionar para dashboard apropriado;
+    
+    |Usuário|
+    :Visualizar dashboard;
+    
+  else (não)
+    |Sistema Backend|
+    
+    switch (Motivo da inativação)
+      case (Conta não verificada)
+        :Reenviar email de verificação;
+        |Sistema Frontend|
+        :Exibir "Verifique seu email";
+        :Mostrar opção de reenvio;
+      case (Conta suspensa)
+        |Sistema Frontend|
+        :Exibir "Conta suspensa";
+        :Mostrar contato do suporte;
+      case (Conta bloqueada)
+        |Sistema Frontend|
+        :Exibir "Conta bloqueada por segurança";
+        :Oferecer recuperação de senha;
+    endswitch
+    
+    |Usuário|
+    stop
+  endif
+  
+else (não)
+  |Sistema Backend|
+  :Incrementar contador de tentativas;
+  
+  |Banco de Dados|
+  :Atualizar tentativas falhas;
+  
+  |Sistema Backend|
+  if (Tentativas > 5?) then (sim)
+    :Bloquear conta temporariamente;
+    :Enviar email de alerta;
+    |Sistema Frontend|
+    :Exibir "Conta bloqueada";
+    :Mostrar opção de recuperação;
+  else (não)
+    :Calcular tentativas restantes;
+    |Sistema Frontend|
+    :Exibir "Senha incorreta";
+    :Mostrar tentativas restantes;
+  endif
+  
+  |Usuário|
+  if (Esqueceu a senha?) then (sim)
+    :Clicar em "Esqueci minha senha";
+    |Sistema Frontend|
+    :Iniciar fluxo de recuperação;
+    note right
+      Fluxo de recuperação
+      é um processo separado
+    end note
+  else (não)
+    backward:Tentar novamente;
+  endif
+endif
+
+stop
+
+legend right
+  |= Cor |= Componente |
+  |<#LightBlue> | Usuário |
+  |<#LightGreen> | Sistema Frontend |
+  |<#Yellow> | Sistema Backend |
+  |<#Pink> | Banco de Dados |
+endlegend
+
+@enduml
+

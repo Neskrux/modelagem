@@ -1,0 +1,121 @@
+@startuml Diagrama de Estados - Agendamento
+!define RECTANGLE class
+
+title Diagrama de Máquina de Estados - Agendamento
+
+[*] --> Criado : criar()
+
+state Criado {
+    entry: registrarDataCriacao()
+    entry: atribuirId()
+    entry: definirStatusInicial()
+    exit: notificarCriacao()
+}
+
+Criado --> Pendente : solicitar() [dadosCompletos]
+
+state Pendente {
+    entry: enviarNotificacaoBarbeiro()
+    entry: enviarEmailCliente()
+    entry: registrarHorarioSolicitacao()
+    exit: atualizarTimestamp()
+    
+    Pendente : do/ aguardarConfirmacao()
+}
+
+Pendente --> Confirmado : confirmar() [barbeiroDisponivel && horarioLivre]
+Pendente --> Cancelado : cancelar() [motivoCancelamento != null]
+Pendente --> Remarcado : remarcar() [novaDataHorario != null]
+
+state Confirmado {
+    entry: enviarConfirmacaoCliente()
+    entry: bloquearHorarioAgenda()
+    entry: gerarCodigoConfirmacao()
+    exit: liberarRecursos()
+    
+    Confirmado : do/ monitorarProximidade()
+}
+
+state Remarcado {
+    entry: registrarDataAnterior()
+    entry: atualizarNovoHorario()
+    entry: notificarAlteracao()
+    exit: limparDadosAntigos()
+}
+
+Remarcado --> Pendente : reprocessar() [novosDadosValidados]
+
+Confirmado --> EmAndamento : iniciar() [dataHora == agora && barbeiroPresente]
+Confirmado --> NaoCompareceu : marcarFalta() [tempoEspera > 15min]
+Confirmado --> Cancelado : cancelar() [antecedencia >= 2horas]
+
+state EmAndamento {
+    entry: registrarInicio()
+    entry: notificarProximoCliente()
+    entry: iniciarTimer()
+    exit: calcularDuracao()
+    
+    EmAndamento : do/ executarServico()
+}
+
+state Concluido {
+    entry: registrarFim()
+    entry: calcularValorFinal()
+    entry: solicitarAvaliacao()
+    entry: processarPagamento()
+    exit: arquivarHistorico()
+}
+
+EmAndamento --> Concluido : finalizar() [servicoCompleto && pagamentoOK]
+
+state Cancelado {
+    entry: registrarMotivoCancelamento()
+    entry: liberarHorarioAgenda()
+    entry: notificarCancelamento()
+    entry: aplicarPoliticaCancelamento()
+    exit: arquivarRegistro()
+}
+
+state NaoCompareceu {
+    entry: registrarFalta()
+    entry: aplicarMulta()
+    entry: liberarHorarioUrgente()
+    entry: notificarGerencia()
+    exit: atualizarHistoricoCliente()
+}
+
+Concluido --> Avaliado : avaliar() [notaAtribuida && comentario != null]
+
+state Avaliado {
+    entry: registrarAvaliacao()
+    entry: calcularMediaBarbeiro()
+    entry: enviarAgradecimento()
+}
+
+Cancelado --> [*]
+NaoCompareceu --> [*]
+Avaliado --> [*]
+
+note right of Pendente
+  Condições de Guarda:
+  - barbeiroDisponivel: barbeiro tem horário livre
+  - horarioLivre: não há conflito de agenda
+  - dadosCompletos: todos campos obrigatórios preenchidos
+end note
+
+note left of Cancelado
+  Política de Cancelamento:
+  - Com > 2h antecedência: sem multa
+  - Com < 2h antecedência: multa de 30%
+  - Não comparecimento: multa de 50%
+end note
+
+note bottom of EmAndamento
+  Eventos Monitorados:
+  - Tempo de execução
+  - Serviços adicionais
+  - Pausas e interrupções
+end note
+
+@enduml
+

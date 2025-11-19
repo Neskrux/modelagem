@@ -1,0 +1,172 @@
+@startuml Diagrama de Navegação de Telas
+!theme plain
+
+title Diagrama de Navegação - Sistema de Agendamento de Barbearia
+
+skinparam rectangle {
+  BackgroundColor LightBlue
+  BorderColor Black
+  BorderThickness 2
+  RoundCorner 10
+}
+
+skinparam arrow {
+  Color DarkBlue
+  Thickness 2
+}
+
+' Tela de Login (Ponto de Entrada)
+rectangle "**Tela de Login**\n- Email\n- Senha\n- Seleção de Perfil\n- Recuperar Senha" as Login #LightYellow
+
+' Dashboards por Perfil
+rectangle "**Dashboard Cliente**\n- Próximos agendamentos\n- Histórico resumido\n- Ações rápidas\n- Notificações" as DashCliente #LightGreen
+
+rectangle "**Dashboard Barbeiro**\n- Agenda do dia\n- Próximos clientes\n- Estatísticas pessoais\n- Comissões" as DashBarbeiro #LightCyan
+
+rectangle "**Dashboard Gerente**\n- Visão geral\n- Métricas de negócio\n- Alertas do sistema\n- Gráficos gerenciais" as DashGerente #Pink
+
+' Módulos Principais
+rectangle "**Agendamentos**\n- Lista de agendamentos\n- Filtros por status\n- Filtros por data\n- Ações de gerenciamento" as Agendamentos
+
+rectangle "**Novo Agendamento**\n- Seleção de serviço\n- Escolha de barbeiro\n- Calendário\n- Confirmação" as NovoAgendamento
+
+rectangle "**Meus Agendamentos**\n(Visão Cliente)\n- Agendamentos ativos\n- Histórico\n- Cancelar/Remarcar" as MeusAgendamentos
+
+rectangle "**Clientes**\n- Lista de clientes\n- Cadastro/Edição\n- Histórico de atendimento\n- Preferências" as Clientes
+
+rectangle "**Barbeiros**\n- Lista de profissionais\n- Cadastro/Edição\n- Especialidades\n- Agenda individual" as Barbeiros
+
+rectangle "**Serviços**\n- Catálogo de serviços\n- Preços e durações\n- Adicionar/Editar\n- Categorias" as Servicos
+
+' Telas Secundárias
+rectangle "**Detalhes Agendamento**\n- Informações completas\n- Status e histórico\n- Opções de ação\n- Código confirmação" as DetalhesAgend
+
+rectangle "**Perfil Usuário**\n- Dados pessoais\n- Alterar senha\n- Preferências\n- Foto de perfil" as Perfil
+
+rectangle "**Configurações**\n- Horário funcionamento\n- Políticas\n- Integrações\n- Backup" as Config
+
+rectangle "**Relatórios**\n- Faturamento\n- Ocupação\n- Performance\n- Exportar dados" as Relatorios
+
+rectangle "**Notificações**\n- Central de mensagens\n- Configurar alertas\n- Histórico\n- Marcar como lida" as Notificacoes
+
+rectangle "**Agenda Barbeiro**\n- Calendário individual\n- Bloqueios\n- Disponibilidade\n- Férias/Folgas" as AgendaBarbeiro
+
+rectangle "**Financeiro**\n- Pagamentos\n- Comissões\n- Multas\n- Extrato" as Financeiro
+
+rectangle "**Avaliações**\n- Feedback clientes\n- Notas e comentários\n- Responder avaliações\n- Estatísticas" as Avaliacoes
+
+' Telas de Suporte
+rectangle "**Ajuda/FAQ**\n- Perguntas frequentes\n- Tutoriais\n- Contato suporte\n- Chat online" as Ajuda
+
+rectangle "**Recuperar Senha**\n- Email de recuperação\n- Token de validação\n- Nova senha\n- Confirmação" as RecuperarSenha
+
+' Fluxo de Login
+Login --> DashCliente : [Perfil: Cliente]
+Login --> DashBarbeiro : [Perfil: Barbeiro]
+Login --> DashGerente : [Perfil: Gerente]
+Login --> RecuperarSenha : [Esqueceu senha]
+
+' Navegação Dashboard Cliente
+DashCliente --> MeusAgendamentos : [Ver agendamentos]
+DashCliente --> NovoAgendamento : [Agendar]
+DashCliente --> Perfil : [Meu perfil]
+DashCliente --> Notificacoes : [Notificações]
+DashCliente --> Ajuda : [Ajuda]
+
+' Navegação Dashboard Barbeiro
+DashBarbeiro --> Agendamentos : [Gerenciar agenda]
+DashBarbeiro --> AgendaBarbeiro : [Minha agenda]
+DashBarbeiro --> Clientes : [Meus clientes]
+DashBarbeiro --> Financeiro : [Comissões]
+DashBarbeiro --> Perfil : [Perfil]
+DashBarbeiro --> Avaliacoes : [Avaliações]
+
+' Navegação Dashboard Gerente
+DashGerente --> Agendamentos : [Todos agendamentos]
+DashGerente --> Barbeiros : [Gerenciar barbeiros]
+DashGerente --> Clientes : [Gerenciar clientes]
+DashGerente --> Servicos : [Gerenciar serviços]
+DashGerente --> Relatorios : [Relatórios]
+DashGerente --> Financeiro : [Financeiro]
+DashGerente --> Config : [Configurações]
+
+' Navegação de Agendamentos
+Agendamentos --> DetalhesAgend : [Ver detalhes]
+Agendamentos --> NovoAgendamento : [Novo]
+MeusAgendamentos --> DetalhesAgend : [Ver detalhes]
+MeusAgendamentos --> NovoAgendamento : [Novo agendamento]
+
+' Navegação de Detalhes
+DetalhesAgend --> Agendamentos : [Voltar]
+DetalhesAgend --> NovoAgendamento : [Remarcar]
+
+' Navegação de Barbeiros
+Barbeiros --> AgendaBarbeiro : [Ver agenda]
+AgendaBarbeiro --> Barbeiros : [Voltar]
+
+' Navegação de Clientes
+Clientes --> DetalhesAgend : [Ver histórico]
+Clientes --> NovoAgendamento : [Agendar para cliente]
+
+' Navegação de volta aos Dashboards
+Agendamentos --> DashGerente : [Voltar]
+Agendamentos --> DashBarbeiro : [Voltar]
+MeusAgendamentos --> DashCliente : [Voltar]
+NovoAgendamento --> DashCliente : [Voltar/Cancelar]
+NovoAgendamento --> DashGerente : [Voltar/Cancelar]
+Perfil --> DashCliente : [Voltar]
+Perfil --> DashBarbeiro : [Voltar]
+Perfil --> DashGerente : [Voltar]
+
+' Logout de qualquer tela
+DashCliente --> Login : [Sair]
+DashBarbeiro --> Login : [Sair]
+DashGerente --> Login : [Sair]
+
+' Recuperação de Senha
+RecuperarSenha --> Login : [Voltar/Sucesso]
+
+note bottom of Login
+  **Ponto de Entrada Único**
+  Todos os usuários começam aqui
+  Autenticação obrigatória
+end note
+
+note right of DashGerente
+  **Acesso Total**
+  Gerente tem acesso a
+  todas as funcionalidades
+  do sistema
+end note
+
+note left of DashCliente
+  **Acesso Limitado**
+  Cliente vê apenas seus
+  próprios dados e
+  agendamentos
+end note
+
+note bottom of NovoAgendamento
+  **Tela Central**
+  Acessível por todos
+  os perfis com
+  permissões diferentes
+end note
+
+legend right
+  |= Cores das Telas |
+  |<#LightYellow> | Autenticação |
+  |<#LightGreen> | Dashboard Cliente |
+  |<#LightCyan> | Dashboard Barbeiro |
+  |<#Pink> | Dashboard Gerente |
+  |<#LightBlue> | Módulos Gerais |
+  
+  **Tipos de Navegação:**
+  → Navegação principal
+  [Condição] Navegação condicional
+  [Voltar] Retorno à tela anterior
+  [Sair] Logout do sistema
+endlegend
+
+@enduml
+

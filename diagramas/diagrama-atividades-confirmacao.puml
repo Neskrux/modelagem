@@ -1,0 +1,335 @@
+@startuml Diagrama de Atividades - Confirmação de Agendamento
+!theme plain
+
+title Diagrama de Atividades - Processo de Confirmação de Agendamento (Método Nível Granular)
+
+|#LightYellow|Barbeiro|
+|#LightGreen|Sistema|
+|#LightBlue|Banco de Dados|
+|#Pink|Serviços Externos|
+
+|Barbeiro|
+start
+:Acessar lista de agendamentos pendentes;
+
+|Sistema|
+:executarConsultaAgendamentos();
+note right
+  SELECT * FROM agendamentos
+  WHERE status = 'pendente'
+  AND barbeiro_id = :barbeiro_id
+  ORDER BY data_hora ASC
+end note
+
+|Banco de Dados|
+:retornarListaAgendamentos();
+
+|Sistema|
+:renderizarInterfaceAgendamentos();
+:aplicarFiltrosPendentes();
+
+|Barbeiro|
+:Selecionar agendamento para confirmar;
+:Clicar botão "Confirmar";
+
+|Sistema|
+partition "confirmarAgendamento(agendamentoId)" #LightCyan {
+  :validarPermissao(barbeiroId, agendamentoId);
+  
+  if (temPermissao()) then (não)
+    :lancarExcecao("Sem permissão");
+    :registrarTentativaInvalida();
+    stop
+  endif
+  
+  :iniciarTransacao();
+  
+  |Banco de Dados|
+  :bloquearRegistro(agendamentoId);
+  note right
+    SELECT * FROM agendamentos
+    WHERE id = :id
+    FOR UPDATE
+  end note
+  
+  |Sistema|
+  :verificarStatusAtual();
+  
+  if (status == 'pendente') then (não)
+    :rollbackTransacao();
+    :retornarErro("Status inválido");
+    stop
+  endif
+  
+  partition "validarDisponibilidade()" #Yellow {
+    :obterDadosAgendamento();
+    :extrairDataHora();
+    :calcularDuracaoServico();
+    
+    |Banco de Dados|
+    :consultarAgendaCompleta();
+    note right
+      SELECT * FROM agendamentos
+      WHERE barbeiro_id = :barbeiro_id
+      AND status IN ('confirmado', 'em_andamento')
+      AND (
+        (data_hora <= :fim AND data_hora_fim >= :inicio)
+      )
+    end note
+    
+    |Sistema|
+    if (existeConflito()) then (sim)
+      :identificarConflitoEspecifico();
+      :prepararMensagemErro();
+      :rollbackTransacao();
+      :sugerirHorariosAlternativos();
+      stop
+    endif
+    
+    :verificarHorarioFuncionamento();
+    
+    if (dentroHorarioFuncionamento()) then (não)
+      :rollbackTransacao();
+      :retornarErro("Fora do horário");
+      stop
+    endif
+    
+    :verificarIntervaloMinimo();
+    note right
+      Intervalo mínimo de 15 minutos
+      entre agendamentos
+    end note
+  }
+  
+  partition "atualizarStatusAgendamento()" #LightGreen {
+    :prepararUpdateQuery();
+    
+    |Banco de Dados|
+    :executarUpdate();
+    note right
+      UPDATE agendamentos
+      SET status = 'confirmado',
+          data_confirmacao = NOW(),
+          confirmado_por = :barbeiro_id,
+          updated_at = NOW()
+      WHERE id = :agendamento_id
+    end note
+    
+    if (linhasAfetadas > 0) then (não)
+      :rollbackTransacao();
+      :lancarExcecao("Falha no update");
+      stop
+    endif
+  }
+  
+  partition "bloquearHorarioAgenda()" #Orange {
+    :calcularSlotsTempo();
+    note right
+      Dividir duração em slots
+      de 15 minutos
+    end note
+    
+    |Banco de Dados|
+    :inserirBloqueiosAgenda();
+    note right
+      INSERT INTO agenda_bloqueios
+      (barbeiro_id, data_hora, agendamento_id)
+      VALUES (:barbeiro, :slot, :agendamento)
+    end note
+    
+    :atualizarDisponibilidadeBarbeiro();
+  }
+  
+  partition "gerarCodigoConfirmacao()" #LightBlue {
+    :obterTimestamp();
+    :concatenarDados();
+    note right
+      codigo = HASH(
+        agendamento_id +
+        cliente_id +
+        barbeiro_id +
+        timestamp
+      )
+    end note
+    
+    :aplicarHashMD5();
+    :extrairPrimeiros8Caracteres();
+    :converterParaMaiusculas();
+    
+    |Banco de Dados|
+    :salvarCodigoConfirmacao();
+    
+    |Sistema|
+    :retornarCodigo();
+  }
+  
+  partition "processarNotificacoes()" #Pink {
+    fork
+      :prepararNotificacaoCliente();
+      
+      |Serviços Externos|
+      :enviarEmail();
+      note right
+        Template: confirmacao_agendamento
+        Destinatário: cliente.email
+        Assunto: "Agendamento Confirmado"
+      end note
+      
+    fork again
+      :prepararSMS();
+      
+      |Serviços Externos|
+      :enviarSMS();
+      note right
+        API: Twilio/AWS SNS
+        Número: cliente.telefone
+        Mensagem: "Seu agendamento foi confirmado"
+      end note
+      
+    fork again
+      :prepararPushNotification();
+      
+      |Serviços Externos|
+      :enviarPush();
+      note right
+        Firebase Cloud Messaging
+        Token: cliente.fcm_token
+      end note
+      
+    fork again
+      :criarNotificacaoInterna();
+      
+      |Banco de Dados|
+      :inserirNotificacao();
+      note right
+        INSERT INTO notificacoes
+        (usuario_id, tipo, mensagem, lida)
+        VALUES (:cliente, 'confirmacao', :msg, false)
+      end note
+    end fork
+  }
+  
+  partition "agendarLembretes()" #LightYellow {
+    :calcularHorariosLembrete();
+    note right
+      - 24 horas antes
+      - 2 horas antes
+      - 30 minutos antes
+    end note
+    
+    |Banco de Dados|
+    :inserirJobsAgendados();
+    note right
+      INSERT INTO jobs_agendados
+      (tipo, agendamento_id, executar_em)
+      VALUES 
+      ('lembrete_24h', :id, :data_24h),
+      ('lembrete_2h', :id, :data_2h),
+      ('lembrete_30min', :id, :data_30min)
+    end note
+    
+    |Sistema|
+    :configurarCronJobs();
+  }
+  
+  partition "atualizarMetricas()" #LightGray {
+    |Banco de Dados|
+    fork
+      :incrementarConfirmacoesBarbeiro();
+      note right
+        UPDATE barbeiros_metricas
+        SET confirmacoes = confirmacoes + 1
+        WHERE barbeiro_id = :id
+      end note
+      
+    fork again
+      :atualizarTaxaConfirmacao();
+      note right
+        taxa = (confirmados / total) * 100
+      end note
+      
+    fork again
+      :recalcularTempoMedioConfirmacao();
+      
+    fork again
+      :atualizarDashboardGerencial();
+    end fork
+  }
+  
+  partition "registrarAuditoria()" #Yellow {
+    :capturarContexto();
+    note right
+      - IP do usuário
+      - User Agent
+      - Timestamp
+      - Ação realizada
+    end note
+    
+    |Banco de Dados|
+    :inserirLogAuditoria();
+    note right
+      INSERT INTO audit_log
+      (usuario_id, acao, tabela, registro_id, 
+       dados_anteriores, dados_novos, ip, user_agent)
+      VALUES (:barbeiro, 'confirmacao', 'agendamentos',
+              :id, :old_data, :new_data, :ip, :ua)
+    end note
+  }
+  
+  :commitTransacao();
+  
+  partition "prepararResposta()" #LightGreen {
+    :construirObjetoResposta();
+    note right
+      {
+        success: true,
+        agendamento: {...},
+        codigo_confirmacao: "ABC12345",
+        mensagem: "Confirmado com sucesso"
+      }
+    end note
+    
+    :serializarJSON();
+    :definirHeadersHTTP();
+  }
+}
+
+|Sistema|
+:retornarRespostaHTTP200();
+:atualizarInterfaceUsuario();
+:exibirNotificacaoSucesso();
+
+|Barbeiro|
+:Visualizar confirmação;
+:Ver código gerado;
+
+partition "Tratamento de Erros" #Red {
+  |Sistema|
+  floating note
+    try {
+      confirmarAgendamento()
+    } catch (Exception e) {
+      - rollbackTransacao()
+      - registrarErro(e)
+      - notificarSuporteTecnico()
+      - retornarErroHTTP500()
+    }
+  end note
+}
+
+stop
+
+legend right
+  |= Cor |= Componente |
+  |<#LightYellow> | Barbeiro |
+  |<#LightGreen> | Sistema |
+  |<#LightBlue> | Banco de Dados |
+  |<#Pink> | Serviços Externos |
+  
+  **Nível de Granularidade: MÉTODO**
+  Este diagrama representa o processo
+  interno do método confirmarAgendamento()
+endlegend
+
+@enduml
+

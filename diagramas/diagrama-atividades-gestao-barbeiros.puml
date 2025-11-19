@@ -1,0 +1,337 @@
+@startuml Diagrama de Atividades - Gestão de Barbeiros
+!theme plain
+
+title Diagrama de Atividades - Gestão de Barbeiros (Perfil Gerente)
+
+|#Pink|Gerente|
+|#LightGreen|Sistema|
+|#Yellow|Validação|
+|#LightBlue|Banco de Dados|
+
+|Gerente|
+start
+:Acessar módulo de gestão de barbeiros;
+
+|Sistema|
+:Verificar permissões de gerente;
+
+if (Possui permissão de gestão?) then (não)
+  :Exibir erro de autorização;
+  stop
+endif
+
+:Carregar interface de gestão;
+
+fork
+  |Banco de Dados|
+  :Buscar lista de barbeiros ativos;
+fork again
+  :Buscar barbeiros inativos;
+fork again
+  :Carregar estatísticas gerais;
+fork again
+  :Verificar solicitações pendentes;
+end fork
+
+|Sistema|
+:Exibir dashboard de barbeiros;
+:Mostrar métricas de desempenho;
+
+|Gerente|
+:Selecionar ação desejada;
+
+switch (Tipo de Ação)
+  case (Cadastrar Novo Barbeiro)
+    partition "Cadastro de Barbeiro" #LightCyan {
+      |Sistema|
+      :Exibir formulário de cadastro;
+      
+      |Gerente|
+      :Preencher dados pessoais;
+      note right
+        Dados obrigatórios:
+        - Nome completo
+        - CPF
+        - Email
+        - Telefone
+        - Endereço
+      end note
+      
+      :Definir especialidades;
+      :Configurar horário de trabalho;
+      :Definir comissão/salário;
+      :Upload de documentos;
+      
+      |Validação|
+      fork
+        :Validar CPF;
+        if (CPF já cadastrado?) then (sim)
+          :Retornar erro de duplicação;
+          |Gerente|
+          backward:Verificar dados;
+        endif
+      fork again
+        :Validar email único;
+      fork again
+        :Verificar documentos obrigatórios;
+      fork again
+        :Validar formato dos dados;
+      end fork
+      
+      |Sistema|
+      :Gerar credenciais de acesso;
+      :Criar perfil de barbeiro;
+      
+      |Banco de Dados|
+      :Salvar novo barbeiro;
+      :Criar agenda inicial;
+      :Configurar permissões;
+      
+      |Sistema|
+      fork
+        :Enviar email de boas-vindas;
+      fork again
+        :Enviar credenciais por SMS;
+      fork again
+        :Adicionar ao sistema de ponto;
+      fork again
+        :Criar pasta de documentos;
+      end fork
+      
+      :Exibir confirmação de cadastro;
+    }
+    
+  case (Editar Barbeiro Existente)
+    partition "Edição de Barbeiro" #LightYellow {
+      |Gerente|
+      :Selecionar barbeiro da lista;
+      
+      |Banco de Dados|
+      :Carregar dados completos do barbeiro;
+      :Buscar histórico de alterações;
+      
+      |Sistema|
+      :Exibir formulário preenchido;
+      :Mostrar histórico de performance;
+      
+      |Gerente|
+      :Modificar dados necessários;
+      
+      switch (Tipo de Modificação)
+        case (Dados Pessoais)
+          :Atualizar informações básicas;
+        case (Especialidades)
+          :Adicionar/remover serviços;
+          |Sistema|
+          :Verificar agendamentos afetados;
+        case (Horário de Trabalho)
+          :Alterar grade horária;
+          |Sistema|
+          :Verificar conflitos de agenda;
+          if (Existem agendamentos conflitantes?) then (sim)
+            :Listar agendamentos afetados;
+            |Gerente|
+            if (Confirmar remarcação?) then (sim)
+              :Notificar clientes afetados;
+              :Oferecer reagendamento;
+            else (não)
+              :Cancelar alteração de horário;
+            endif
+          endif
+        case (Comissão/Salário)
+          :Ajustar valores;
+          :Definir data de vigência;
+      endswitch
+      
+      |Validação|
+      :Validar alterações;
+      :Registrar log de auditoria;
+      
+      |Banco de Dados|
+      :Atualizar registro do barbeiro;
+      :Salvar histórico de mudanças;
+      
+      |Sistema|
+      :Notificar barbeiro das alterações;
+      :Atualizar cache do sistema;
+    }
+    
+  case (Gerenciar Agenda)
+    partition "Gestão de Agenda" #LightGreen {
+      |Gerente|
+      :Selecionar barbeiro;
+      :Escolher período;
+      
+      |Banco de Dados|
+      :Carregar agenda do período;
+      :Buscar agendamentos;
+      
+      |Sistema|
+      :Exibir calendário visual;
+      :Mostrar taxa de ocupação;
+      
+      |Gerente|
+      :Selecionar ação de agenda;
+      
+      switch (Ação de Agenda)
+        case (Bloquear Horários)
+          :Selecionar horários/dias;
+          :Informar motivo do bloqueio;
+          
+          |Sistema|
+          if (Existem agendamentos?) then (sim)
+            :Listar agendamentos afetados;
+            |Gerente|
+            :Decidir sobre remarcação;
+            |Sistema|
+            :Processar remarcações;
+            :Notificar clientes;
+          endif
+          
+          |Banco de Dados|
+          :Registrar bloqueios;
+          
+        case (Adicionar Folga/Férias)
+          :Definir período de ausência;
+          :Especificar tipo (folga/férias/licença);
+          
+          |Sistema|
+          :Verificar saldo de férias;
+          :Calcular impacto na agenda;
+          
+          fork
+            :Remarcar agendamentos automáticos;
+          fork again
+            :Notificar clientes;
+          fork again
+            :Sugerir redistribuição para outros barbeiros;
+          end fork
+          
+        case (Ajustar Horário Especial)
+          :Definir horário excepcional;
+          :Configurar período de validade;
+          
+          |Banco de Dados|
+          :Salvar configuração especial;
+      endswitch
+    }
+    
+  case (Avaliar Desempenho)
+    partition "Análise de Desempenho" #Orange {
+      |Gerente|
+      :Selecionar barbeiro(s);
+      :Definir período de análise;
+      
+      |Banco de Dados|
+      fork
+        :Calcular total de atendimentos;
+      fork again
+        :Somar faturamento gerado;
+      fork again
+        :Compilar avaliações de clientes;
+      fork again
+        :Verificar pontualidade;
+      fork again
+        :Contar cancelamentos/faltas;
+      fork again
+        :Calcular tempo médio de serviço;
+      end fork
+      
+      |Sistema|
+      :Gerar relatório de desempenho;
+      :Criar gráficos comparativos;
+      :Calcular ranking entre barbeiros;
+      
+      :Identificar pontos de melhoria;
+      :Sugerir ações corretivas;
+      
+      |Gerente|
+      if (Desempenho satisfatório?) then (não)
+        :Registrar feedback;
+        :Definir plano de melhoria;
+        :Agendar reunião;
+        
+        |Sistema|
+        :Criar alerta de acompanhamento;
+        :Programar reavaliação;
+      else (sim)
+        :Registrar reconhecimento;
+        
+        if (Elegível para bonificação?) then (sim)
+          :Calcular bônus;
+          :Aprovar premiação;
+        endif
+      endif
+      
+      |Banco de Dados|
+      :Salvar avaliação;
+      :Atualizar histórico do barbeiro;
+    }
+    
+  case (Desativar/Demitir)
+    partition "Desativação de Barbeiro" #Red {
+      |Gerente|
+      :Selecionar barbeiro;
+      :Informar motivo;
+      :Definir data de desligamento;
+      
+      |Sistema|
+      :Verificar pendências;
+      
+      fork
+        :Listar agendamentos futuros;
+      fork again
+        :Calcular valores pendentes;
+      fork again
+        :Verificar equipamentos em posse;
+      end fork
+      
+      |Gerente|
+      if (Confirmar desativação?) then (sim)
+        |Sistema|
+        :Cancelar agendamentos futuros;
+        :Notificar clientes afetados;
+        :Oferecer reagendamento com outros;
+        
+        :Bloquear acesso ao sistema;
+        :Arquivar dados do barbeiro;
+        
+        |Banco de Dados|
+        :Marcar barbeiro como inativo;
+        :Preservar histórico;
+        
+        |Sistema|
+        :Gerar relatório de desligamento;
+        :Processar acertos finais;
+      else (não)
+        :Cancelar operação;
+      endif
+    }
+endswitch
+
+|Sistema|
+:Registrar todas as ações em log;
+:Atualizar dashboard;
+:Sincronizar com outros módulos;
+
+|Gerente|
+:Visualizar resultado da operação;
+
+if (Deseja realizar outra ação?) then (sim)
+  backward:Selecionar ação desejada;
+else (não)
+  :Sair do módulo;
+endif
+
+stop
+
+legend right
+  |= Cor |= Responsável |
+  |<#Pink> | Gerente |
+  |<#LightGreen> | Sistema |
+  |<#Yellow> | Validação |
+  |<#LightBlue> | Banco de Dados |
+endlegend
+
+@enduml
+

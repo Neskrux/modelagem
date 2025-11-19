@@ -1,0 +1,182 @@
+@startuml Diagrama de Estados - Usuario
+!define RECTANGLE class
+
+title Diagrama de Máquina de Estados - Usuário (Cliente/Barbeiro)
+
+[*] --> NaoCadastrado : iniciar()
+
+state NaoCadastrado {
+    entry: exibirFormularioCadastro()
+    exit: validarDados()
+}
+
+NaoCadastrado --> Cadastrando : solicitarCadastro() [dadosPreenchidos]
+
+state Cadastrando {
+    entry: validarCPF()
+    entry: verificarEmailUnico()
+    entry: criptografarSenha()
+    exit: enviarEmailConfirmacao()
+    
+    Cadastrando : do/ processarCadastro()
+}
+
+Cadastrando --> PendenteAtivacao : cadastrar() [dadosValidos && emailEnviado]
+Cadastrando --> NaoCadastrado : falhar() [dadosInvalidos || emailDuplicado]
+
+state PendenteAtivacao {
+    entry: gerarTokenAtivacao()
+    entry: definirPrazoExpiracao()
+    entry: enviarLembretes()
+    exit: limparToken()
+    
+    PendenteAtivacao : do/ aguardarConfirmacaoEmail()
+}
+
+PendenteAtivacao --> Inativo : confirmarEmail() [tokenValido && !expirado]
+PendenteAtivacao --> NaoCadastrado : expirar() [prazo > 48horas]
+
+state Inativo {
+    entry: registrarAtivacao()
+    entry: criarPerfilInicial()
+    entry: atribuirPermissoes()
+    exit: registrarUltimoAcesso()
+}
+
+Inativo --> Autenticando : fazerLogin() [credenciaisInformadas]
+
+state Autenticando {
+    entry: verificarCredenciais()
+    entry: verificarTentativasLogin()
+    exit: registrarTentativa()
+    
+    Autenticando : do/ validarAcesso()
+}
+
+Autenticando --> Ativo : autenticar() [credenciaisValidas && contaAtiva]
+Autenticando --> Bloqueado : bloquear() [tentativas > 5]
+Autenticando --> Inativo : falharLogin() [credenciaisInvalidas]
+
+state Ativo {
+    entry: criarSessao()
+    entry: registrarLogin()
+    entry: carregarPermissoes()
+    entry: sincronizarDados()
+    exit: salvarAtividades()
+    
+    state Cliente {
+        entry: carregarAgendamentosCliente()
+        entry: habilitarMenuCliente()
+        
+        Cliente : do/ permitirAgendamento()
+        Cliente : do/ visualizarHistorico()
+    }
+    
+    state Barbeiro {
+        entry: carregarAgendaBarbeiro()
+        entry: habilitarMenuBarbeiro()
+        
+        Barbeiro : do/ gerenciarAgenda()
+        Barbeiro : do/ atenderClientes()
+    }
+    
+    state Gerente {
+        entry: carregarDashboardCompleto()
+        entry: habilitarMenuAdmin()
+        
+        Gerente : do/ gerenciarSistema()
+        Gerente : do/ visualizarRelatorios()
+    }
+}
+
+Ativo --> EmSessao : navegarSistema() [sessaoValida]
+
+state EmSessao {
+    entry: monitorarAtividade()
+    entry: renovarToken()
+    exit: salvarEstado()
+    
+    EmSessao : do/ executarOperacoes()
+}
+
+EmSessao --> Inativo : fazerLogout() [logoutSolicitado || sessaoExpirada]
+EmSessao --> Suspenso : detectarInatividade() [tempo > 30min]
+
+state Suspenso {
+    entry: pausarSessao()
+    entry: exibirTelaBloquieo()
+    entry: manterDadosMemoria()
+    exit: limparTelaBoqueio()
+}
+
+Suspenso --> EmSessao : reativar() [senhaCorreta && tempo < 60min]
+Suspenso --> Inativo : expirarSessao() [tempo > 60min]
+
+state Bloqueado {
+    entry: registrarBloqueio()
+    entry: notificarAdministrador()
+    entry: enviarEmailUsuario()
+    exit: registrarDesbloqueio()
+    
+    Bloqueado : do/ aguardarDesbloqueio()
+}
+
+Bloqueado --> RecuperandoSenha : solicitarRecuperacao() [emailValido]
+Bloqueado --> Inativo : desbloquear() [adminAutorizou || tempoEspera > 24h]
+
+state RecuperandoSenha {
+    entry: gerarTokenRecuperacao()
+    entry: enviarLinkReset()
+    entry: definirValidadeToken()
+    exit: invalidarTokensAntigos()
+}
+
+RecuperandoSenha --> RedefinindoSenha : acessarLink() [tokenValido]
+RecuperandoSenha --> Inativo : expirarToken() [prazo > 2horas]
+
+state RedefinindoSenha {
+    entry: validarNovaSenha()
+    entry: verificarHistoricoSenhas()
+    exit: atualizarSenha()
+}
+
+RedefinindoSenha --> Inativo : confirmarNovaSenha() [senhaValida && diferenteAnterior]
+
+state Desativado {
+    entry: marcarComoInativo()
+    entry: cancelarAgendamentosFuturos()
+    entry: manterHistorico()
+    entry: enviarConfirmacao()
+    
+    Desativado : do/ aguardarReativacao()
+}
+
+Ativo --> Desativado : desativarConta() [solicitacaoUsuario || inatividade > 6meses]
+Desativado --> Inativo : reativarConta() [solicitacaoValida && adminAprovou]
+
+Inativo --> [*] : excluirConta() [confirmado && LGPD_OK]
+Desativado --> [*] : excluirDefinitivo() [prazo > 2anos]
+
+note right of Ativo
+  Tipos de Usuário:
+  - Cliente: acesso limitado aos próprios agendamentos
+  - Barbeiro: acesso à agenda e clientes
+  - Gerente: acesso total ao sistema
+end note
+
+note left of Bloqueado
+  Condições de Desbloqueio:
+  - Autorização do administrador
+  - Recuperação de senha bem-sucedida
+  - Tempo de espera (24h) expirado
+end note
+
+note bottom of EmSessao
+  Monitoramento de Sessão:
+  - Timeout de inatividade: 30 minutos
+  - Expiração total: 60 minutos
+  - Renovação automática de token
+end note
+
+@enduml
+

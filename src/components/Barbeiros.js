@@ -339,3 +339,5 @@ const Barbeiros = ({ onLogout }) => {
 };
 
 export default Barbeiros;
+
+

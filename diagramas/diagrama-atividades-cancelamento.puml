@@ -1,0 +1,257 @@
+@startuml Diagrama de Atividades - Cancelamento de Agendamento
+!theme plain
+
+title Diagrama de Atividades - Processo de Cancelamento com Política de Multas
+
+|#LightBlue|Cliente|
+|#LightGreen|Sistema|
+|#Yellow|Política de Cancelamento|
+|#Pink|Serviços de Notificação|
+
+|Cliente|
+start
+:Acessar "Meus Agendamentos";
+:Localizar agendamento ativo;
+:Clicar em "Cancelar";
+
+|Sistema|
+:Exibir modal de confirmação;
+:Mostrar política de cancelamento;
+
+note right
+  Política de Cancelamento:
+  - Mais de 24h: Sem multa
+  - Entre 2h e 24h: Multa de 30%
+  - Menos de 2h: Multa de 50%
+  - Não comparecimento: Multa de 100%
+end note
+
+|Cliente|
+if (Confirmar cancelamento?) then (não)
+  :Fechar modal;
+  stop
+endif
+
+:Selecionar motivo do cancelamento;
+note left
+  Motivos disponíveis:
+  - Imprevisto pessoal
+  - Problema de saúde
+  - Mudança de planos
+  - Problema financeiro
+  - Outro (especificar)
+end note
+
+:Confirmar cancelamento;
+
+|Sistema|
+partition "Processar Cancelamento" #LightCyan {
+  :Obter dados do agendamento;
+  :Verificar status atual;
+  
+  if (Status permite cancelamento?) then (não)
+    :Exibir erro;
+    note right
+      Não é possível cancelar:
+      - Agendamentos concluídos
+      - Agendamentos em andamento
+      - Agendamentos já cancelados
+    end note
+    stop
+  endif
+  
+  :Calcular tempo até o agendamento;
+  :Obter data/hora atual;
+  :Calcular diferença em horas;
+  
+  |Política de Cancelamento|
+  partition "Aplicar Política de Multa" #Orange {
+    if (Tempo até agendamento > 24 horas?) then (sim)
+      :Definir multa = 0%;
+      :Status = "Cancelado sem ônus";
+    elseif (Tempo entre 2h e 24h?) then (sim)
+      :Calcular multa = 30% do valor;
+      :Status = "Cancelado com multa parcial";
+      
+      fork
+        :Gerar cobrança de multa;
+      fork again
+        :Adicionar crédito parcial (70%);
+      end fork
+      
+    elseif (Tempo menor que 2 horas?) then (sim)
+      :Calcular multa = 50% do valor;
+      :Status = "Cancelado com multa";
+      
+      fork
+        :Gerar cobrança de multa;
+      fork again
+        :Adicionar crédito parcial (50%);
+      end fork
+      
+    else (agendamento já passou)
+      :Aplicar multa = 100%;
+      :Status = "Não comparecimento";
+      :Registrar falta;
+    endif
+    
+    :Registrar valor da multa;
+    :Atualizar saldo do cliente;
+  }
+  
+  |Sistema|
+  partition "Atualizar Registros" #LightGreen {
+    fork
+      :Atualizar status do agendamento;
+      :Registrar motivo do cancelamento;
+      :Salvar timestamp do cancelamento;
+      :Registrar responsável pelo cancelamento;
+    fork again
+      :Liberar horário na agenda;
+      :Atualizar disponibilidade do barbeiro;
+    fork again
+      :Atualizar métricas do cliente;
+      :Incrementar contador de cancelamentos;
+    fork again
+      if (Multa > 0) then (sim)
+        :Criar registro financeiro;
+        :Gerar boleto/cobrança;
+        :Atualizar extrato do cliente;
+      endif
+    end fork
+  }
+  
+  partition "Processar Reembolso/Crédito" #Yellow {
+    if (Cliente tinha pago antecipadamente?) then (sim)
+      if (Multa == 0) then (sim)
+        :Processar reembolso total;
+        :Criar ordem de devolução;
+      elseif (Multa < 100%) then (sim)
+        :Calcular valor a devolver;
+        :Processar reembolso parcial;
+        
+        switch (Preferência do cliente)
+          case (Crédito na conta)
+            :Adicionar crédito para futuro uso;
+            :Enviar comprovante de crédito;
+          case (Devolução bancária)
+            :Iniciar processo PIX/TED;
+            :Prazo de 3-5 dias úteis;
+          case (Vale para reagendamento)
+            :Gerar código de desconto;
+            :Definir validade do vale;
+        endswitch
+      else (multa 100%)
+        :Não há reembolso;
+        :Registrar perda total;
+      endif
+    endif
+  }
+  
+  |Serviços de Notificação|
+  partition "Enviar Notificações" #Pink {
+    fork
+      :Notificar cliente;
+      :Enviar email de confirmação;
+      note right
+        Conteúdo do email:
+        - Confirmação do cancelamento
+        - Valor de multa (se houver)
+        - Instruções para reembolso
+        - Link para reagendar
+      end note
+      
+    fork again
+      :Notificar barbeiro;
+      :Liberar agenda do profissional;
+      :Atualizar dashboard do barbeiro;
+      
+    fork again
+      :Notificar gerência;
+      :Atualizar relatórios;
+      :Registrar em log de cancelamentos;
+      
+    fork again
+      if (Horário liberado < 24h) then (sim)
+        :Verificar lista de espera;
+        :Notificar clientes em espera;
+        note right
+          "Um horário acabou de 
+          ficar disponível!"
+        end note
+      endif
+    end fork
+  }
+  
+  partition "Ações de Follow-up" #LightYellow {
+    :Agendar pesquisa de satisfação;
+    note right
+      Enviar após 24h perguntando
+      motivo do cancelamento
+    end note
+    
+    if (Cliente frequente?) then (sim)
+      :Marcar para contato do atendimento;
+      :Oferecer incentivo para reagendamento;
+    endif
+    
+    if (Muitos cancelamentos recentes?) then (sim)
+      :Sinalizar conta para revisão;
+      :Possível bloqueio preventivo;
+    endif
+  }
+}
+
+|Sistema|
+:Exibir confirmação do cancelamento;
+:Mostrar detalhes da política aplicada;
+
+if (Multa aplicada?) then (sim)
+  :Exibir valor da multa;
+  :Mostrar opções de pagamento;
+  :Informar sobre créditos/reembolsos;
+endif
+
+:Oferecer opção de reagendamento;
+
+|Cliente|
+if (Deseja reagendar?) then (sim)
+  :Redirecionar para novo agendamento;
+  
+  if (Possui crédito/vale?) then (sim)
+    |Sistema|
+    :Aplicar desconto automaticamente;
+    :Mostrar valor com desconto;
+  endif
+else (não)
+  :Finalizar processo;
+endif
+
+partition "Regras de Negócio Especiais" #LightCyan {
+  |Sistema|
+  floating note
+    **Exceções à Política:**
+    - Emergências médicas (com atestado): Sem multa
+    - Falha do sistema: Sem multa
+    - Barbeiro não disponível: Sem multa + compensação
+    - Força maior comprovada: Análise caso a caso
+    
+    **Limites:**
+    - Máximo 3 cancelamentos/mês sem bloqueio
+    - Cancelamentos recorrentes: Revisão de conta
+    - No-show repetido: Bloqueio automático
+  end note
+}
+
+stop
+
+legend right
+  |= Cor |= Componente |
+  |<#LightBlue> | Cliente |
+  |<#LightGreen> | Sistema |
+  |<#Yellow> | Política de Cancelamento |
+  |<#Pink> | Serviços de Notificação |
+endlegend
+
+@enduml
+

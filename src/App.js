@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import Login from './components/Login';
+import LoginCarousel from './components/LoginCarousel';
 import Dashboard from './components/Dashboard';
 import Clientes from './components/Clientes';
 import Barbeiros from './components/Barbeiros';
@@ -30,7 +30,7 @@ function App() {
             path="/login" 
             element={
               !isAuthenticated ? 
-              <Login onLogin={handleLogin} /> : 
+              <LoginCarousel onLogin={handleLogin} /> : 
               <Navigate to="/dashboard" />
             } 
           />
@@ -82,3 +82,5 @@ function App() {
 }
 
 export default App;
+
+

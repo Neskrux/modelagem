@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Agendamento de Barbearia - Todos os Diagramas UML</title>
+    <script src="https://cdn.jsdelivr.net/npm/plantuml-encoder@1.4.0/dist/plantuml-encoder.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+        
+        .requirements-box {
+            background: #f0f8ff;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            border-left: 5px solid #4169e1;
+        }
+        
+        .requirements-box h2 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+        }
+        
+        .tabs {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 30px;
+            justify-content: center;
+        }
+        
+        .tab {
+            padding: 12px 20px;
+            background: #f0f0f0;
+            border: 2px solid transparent;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.95em;
+            transition: all 0.3s;
+            font-weight: 500;
+        }
+        
+        .tab:hover {
+            background: #e0e0e0;
+            transform: translateY(-2px);
+        }
+        
+        .tab.active {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border-color: #667eea;
+            box-shadow: 0 4px 10px rgba(102, 126, 234, 0.3);
+        }
+        
+        .diagram-container {
+            display: none;
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 10px;
+            border-left: 5px solid #667eea;
+            margin-bottom: 20px;
+        }
+        
+        .diagram-container.active {
+            display: block;
+            animation: fadeIn 0.5s;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .diagram-title {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .diagram-image {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            border: 2px solid #e0e0e0;
+            text-align: center;
+            min-height: 400px;
+            overflow: auto;
+        }
+        
+        .diagram-image img {
+            max-width: 100%;
+            height: auto;
+        }
+        
+        .loading {
+            color: #667eea;
+            font-size: 1.2em;
+            padding: 100px;
+        }
+        
+        .error {
+            color: #e74c3c;
+            padding: 20px;
+            background: #ffe6e6;
+            border-radius: 5px;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 15px;
+            font-size: 0.85em;
+            font-weight: bold;
+            margin-right: 5px;
+        }
+        
+        .badge-estados { background: #ffd700; color: #333; }
+        .badge-atividades { background: #90ee90; color: #333; }
+        .badge-navegacao { background: #87ceeb; color: #333; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 Sistema de Agendamento de Barbearia</h1>
+        <p class="subtitle">Documentação Completa - Todos os 8 Diagramas UML</p>
+        
+        <div class="requirements-box">
+            <h2>✅ Requisitos Atendidos</h2>
+            <p><strong>2 Diagramas de Estados:</strong> Agendamento e Usuário (com subestados)</p>
+            <p><strong>5 Diagramas de Atividades:</strong> Diferentes granularidades com paralelismo</p>
+            <p><strong>1 Diagrama de Navegação:</strong> Fluxo completo entre telas</p>
+        </div>
+        
+        <div class="tabs">
+            <button class="tab active" onclick="showDiagram(0)">
+                <span class="badge badge-estados">1</span> Estados - Agendamento
+            </button>
+            <button class="tab" onclick="showDiagram(1)">
+                <span class="badge badge-estados">2</span> Estados - Usuário
+            </button>
+            <button class="tab" onclick="showDiagram(2)">
+                <span class="badge badge-atividades">3</span> Atividades - Agendamento
+            </button>
+            <button class="tab" onclick="showDiagram(3)">
+                <span class="badge badge-atividades">4</span> Atividades - Login
+            </button>
+            <button class="tab" onclick="showDiagram(4)">
+                <span class="badge badge-atividades">5</span> Atividades - Gestão
+            </button>
+            <button class="tab" onclick="showDiagram(5)">
+                <span class="badge badge-atividades">6</span> Atividades - Confirmação
+            </button>
+            <button class="tab" onclick="showDiagram(6)">
+                <span class="badge badge-atividades">7</span> Atividades - Cancelamento
+            </button>
+            <button class="tab" onclick="showDiagram(7)">
+                <span class="badge badge-navegacao">8</span> Navegação de Telas
+            </button>
+        </div>
+        
+        <div id="diagrams"></div>
+    </div>
+
+    <script>
+        // Códigos PlantUML simplificados para demonstração
+        const diagrams = [
+            {
+                title: "Diagrama de Estados - Agendamento",
+                code: `@startuml
+[*] --> Criado : criar()
+Criado --> Pendente : solicitar()
+Pendente --> Confirmado : confirmar()
+Pendente --> Cancelado : cancelar()
+Confirmado --> EmAndamento : iniciar()
+EmAndamento --> Concluido : finalizar()
+Concluido --> Avaliado : avaliar()
+Confirmado --> NaoCompareceu : noShow()
+Cancelado --> [*]
+NaoCompareceu --> [*]
+Avaliado --> [*]
+@enduml`
+            },
+            {
+                title: "Diagrama de Estados - Usuário",
+                code: `@startuml
+[*] --> NaoCadastrado
+NaoCadastrado --> Cadastrando : cadastrar()
+Cadastrando --> PendenteAtivacao : validar()
+PendenteAtivacao --> Inativo : confirmar()
+Inativo --> Autenticando : login()
+Autenticando --> Ativo : sucesso()
+state Ativo {
+  Cliente --> Cliente : operacoes()
+  Barbeiro --> Barbeiro : operacoes()
+  Gerente --> Gerente : operacoes()
+}
+Ativo --> Inativo : logout()
+Inativo --> [*]
+@enduml`
+            },
+            {
+                title: "Diagrama de Atividades - Processo de Agendamento",
+                code: `@startuml
+|Cliente|
+start
+:Login;
+:Selecionar Serviço;
+|Sistema|
+:Verificar Disponibilidade;
+fork
+  :Buscar Barbeiros;
+fork again
+  :Verificar Horários;
+end fork
+|Cliente|
+:Escolher Barbeiro;
+:Selecionar Data/Hora;
+|Sistema|
+:Confirmar Agendamento;
+:Enviar Notificações;
+stop
+@enduml`
+            },
+            {
+                title: "Diagrama de Atividades - Processo de Login",
+                code: `@startuml
+|Usuario|
+start
+:Inserir Email;
+:Inserir Senha;
+|Sistema|
+:Validar Credenciais;
+if (Válido?) then (sim)
+  :Criar Sessão;
+  :Gerar Token;
+  :Redirecionar Dashboard;
+else (não)
+  :Exibir Erro;
+endif
+stop
+@enduml`
+            },
+            {
+                title: "Diagrama de Atividades - Gestão de Barbeiros",
+                code: `@startuml
+|Gerente|
+start
+:Acessar Gestão;
+|Sistema|
+fork
+  :Carregar Barbeiros;
+fork again
+  :Carregar Estatísticas;
+end fork
+|Gerente|
+:Selecionar Ação;
+switch (Ação)
+case (Cadastrar)
+  :Preencher Dados;
+  :Validar;
+  :Salvar;
+case (Editar)
+  :Modificar Dados;
+  :Validar;
+  :Atualizar;
+case (Desativar)
+  :Confirmar;
+  :Desativar;
+endswitch
+stop
+@enduml`
+            },
+            {
+                title: "Diagrama de Atividades - Confirmação de Agendamento",
+                code: `@startuml
+|Barbeiro|
+start
+:Acessar Pendentes;
+:Selecionar Agendamento;
+|Sistema|
+:Validar Permissão;
+:Iniciar Transação;
+:Verificar Disponibilidade;
+if (Disponível?) then (sim)
+  fork
+    :Enviar Email;
+  fork again
+    :Enviar SMS;
+  fork again
+    :Atualizar Agenda;
+  end fork
+  :Confirmar;
+else (não)
+  :Rollback;
+  :Erro;
+endif
+stop
+@enduml`
+            },
+            {
+                title: "Diagrama de Atividades - Cancelamento com Multas",
+                code: `@startuml
+|Cliente|
+start
+:Solicitar Cancelamento;
+|Sistema|
+:Calcular Tempo;
+if (> 24h?) then (sim)
+  :Sem Multa;
+elseif (> 2h?) then (sim)
+  :Multa 30%;
+else (não)
+  :Multa 50%;
+endif
+:Processar Cancelamento;
+fork
+  :Liberar Horário;
+fork again
+  :Notificar Barbeiro;
+fork again
+  :Processar Reembolso;
+end fork
+stop
+@enduml`
+            },
+            {
+                title: "Diagrama de Navegação de Telas",
+                code: `@startuml
+(*) --> Login
+Login --> DashboardCliente : [Cliente]
+Login --> DashboardBarbeiro : [Barbeiro]
+Login --> DashboardGerente : [Gerente]
+
+DashboardCliente --> MeusAgendamentos
+DashboardCliente --> NovoAgendamento
+MeusAgendamentos --> DetalhesAgendamento
+NovoAgendamento --> Confirmacao
+
+DashboardBarbeiro --> MinhaAgenda
+DashboardBarbeiro --> MeusClientes
+MinhaAgenda --> GerenciarHorarios
+
+DashboardGerente --> TodosAgendamentos
+DashboardGerente --> GerenciarBarbeiros
+DashboardGerente --> Relatorios
+
+TodosAgendamentos --> Login : [Logout]
+MeusClientes --> Login : [Logout]
+Relatorios --> Login : [Logout]
+@enduml`
+            }
+        ];
+
+        function showDiagram(index) {
+            // Atualizar abas
+            document.querySelectorAll('.tab').forEach((tab, i) => {
+                tab.classList.toggle('active', i === index);
+            });
+            
+            // Mostrar diagrama
+            const container = document.getElementById('diagrams');
+            const diagram = diagrams[index];
+            
+            container.innerHTML = `
+                <div class="diagram-container active">
+                    <div class="diagram-title">${diagram.title}</div>
+                    <div class="diagram-image">
+                        <div class="loading">Carregando diagrama...</div>
+                    </div>
+                </div>
+            `;
+            
+            // Gerar URL do PlantUML
+            try {
+                const encoded = plantumlEncoder.encode(diagram.code);
+                const url = `https://www.plantuml.com/plantuml/svg/${encoded}`;
+                
+                setTimeout(() => {
+                    const imageDiv = container.querySelector('.diagram-image');
+                    imageDiv.innerHTML = `<img src="${url}" alt="${diagram.title}" onerror="showError(this)">`;
+                }, 500);
+            } catch (e) {
+                showErrorMessage();
+            }
+        }
+        
+        function showError(img) {
+            img.parentElement.innerHTML = `
+                <div class="error">
+                    <h3>⚠️ Não foi possível carregar o diagrama</h3>
+                    <p>Para visualizar este diagrama:</p>
+                    <ol>
+                        <li>Acesse: <a href="http://www.plantuml.com/plantuml/uml/" target="_blank">PlantUML Online</a></li>
+                        <li>Copie o conteúdo do arquivo .puml correspondente</li>
+                        <li>Cole no site e o diagrama será gerado</li>
+                    </ol>
+                </div>
+            `;
+        }
+        
+        function showErrorMessage() {
+            const container = document.getElementById('diagrams');
+            const imageDiv = container.querySelector('.diagram-image');
+            imageDiv.innerHTML = `
+                <div class="error">
+                    <h3>⚠️ Erro ao processar diagrama</h3>
+                    <p>Use o PlantUML Online para visualizar</p>
+                </div>
+            `;
+        }
+        
+        // Carregar primeiro diagrama
+        window.onload = () => showDiagram(0);
+    </script>
+</body>
+</html>
+
