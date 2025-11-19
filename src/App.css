@@ -13,6 +13,20 @@ body {
   background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
   min-height: 100vh;
   color: #1e293b;
+  overflow-x: hidden;
+}
+
+/* Garantir que inputs não causem zoom no iOS */
+@media screen and (max-width: 768px) {
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="date"],
+  input[type="time"],
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
 }
 
 .App {
@@ -254,4 +268,60 @@ body {
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
+}
+
+/* Responsividade Global */
+@media (max-width: 768px) {
+  .container {
+    padding: 15px;
+  }
+  
+  .btn {
+    padding: 12px 18px;
+    font-size: 15px;
+  }
+  
+  .card {
+    padding: 15px;
+  }
+  
+  .card-title {
+    font-size: 1.25rem;
+  }
+  
+  .table {
+    font-size: 0.9rem;
+  }
+  
+  .table th,
+  .table td {
+    padding: 8px 4px;
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    padding: 10px;
+  }
+  
+  .btn {
+    padding: 10px 15px;
+    font-size: 14px;
+    width: 100%;
+  }
+  
+  .card {
+    padding: 12px;
+  }
+  
+  .card-title {
+    font-size: 1.1rem;
+  }
+  
+  .table {
+    font-size: 0.85rem;
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
 }

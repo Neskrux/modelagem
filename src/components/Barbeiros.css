@@ -247,8 +247,76 @@
   font-size: 1.1rem;
 }
 
+@media (max-width: 1024px) {
+  .barbeiros-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
 @media (max-width: 768px) {
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 15px;
+    padding: 15px;
+  }
+  
   .barbeiros-grid {
     grid-template-columns: 1fr;
+    gap: 15px;
+  }
+  
+  .barbeiro-card {
+    padding: 15px;
+  }
+  
+  .barbeiro-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 15px;
+  }
+  
+  .barbeiro-actions {
+    width: 100%;
+    flex-direction: column;
+  }
+  
+  .barbeiro-actions .btn-action {
+    width: 100%;
+  }
+  
+  .actions-bar {
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  .search-box {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .page-header h1 {
+    font-size: 1.5rem;
+  }
+  
+  .barbeiro-info h3 {
+    font-size: 1.2rem;
+  }
+  
+  .barbeiro-contact,
+  .barbeiro-horarios {
+    font-size: 0.85rem;
+  }
+  
+  .barbeiro-avatar {
+    width: 60px;
+    height: 60px;
+    font-size: 2rem;
+  }
+  
+  .barbeiro-rating {
+    font-size: 0.85rem;
+    padding: 4px 8px;
   }
 }

@@ -394,3 +394,95 @@
   font-size: 0.9rem;
   font-weight: 500;
 }
+
+/* Responsividade */
+@media (max-width: 1024px) {
+  .dashboard-container {
+    padding: 15px;
+  }
+  
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .menu-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 15px;
+    padding: 15px;
+  }
+  
+  .user-info {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .stats-grid {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+  
+  .menu-grid {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+  
+  .stat-card {
+    padding: 20px;
+  }
+  
+  .menu-card {
+    padding: 20px;
+  }
+  
+  .chart-container {
+    padding: 15px;
+    height: 200px;
+  }
+  
+  .chart-bars {
+    gap: 8px;
+  }
+  
+  .bar-value {
+    font-size: 0.75rem;
+    top: -20px;
+  }
+  
+  .bar-label {
+    font-size: 0.75rem;
+    bottom: -20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .dashboard-header h1 {
+    font-size: 1.5rem;
+  }
+  
+  .stat-info h3 {
+    font-size: 1.5rem;
+  }
+  
+  .stat-info p {
+    font-size: 0.85rem;
+  }
+  
+  .menu-icon {
+    font-size: 2rem;
+  }
+  
+  .menu-card h3 {
+    font-size: 1rem;
+  }
+  
+  .chart-container {
+    height: 180px;
+  }
+}
