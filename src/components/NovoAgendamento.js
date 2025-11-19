@@ -6,7 +6,7 @@ import './NovoAgendamento.css';
 const NovoAgendamento = ({ userRole, onLogout }) => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    cliente: '',
+    cliente: userRole === 'cliente' ? 'João Silva' : '',
     barbeiro: '',
     servico: '',
     data: '',
@@ -64,7 +64,10 @@ const NovoAgendamento = ({ userRole, onLogout }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     
-    if (!formData.cliente || !formData.barbeiro || !formData.servico || !formData.data || !formData.horario) {
+    // Validar campos obrigatórios
+    const cliente = userRole === 'cliente' ? 'João Silva' : formData.cliente;
+    
+    if (!cliente || !formData.barbeiro || !formData.servico || !formData.data || !formData.horario) {
       showNotification('Por favor, preencha todos os campos', 'error');
       return;
     }
@@ -145,9 +148,11 @@ const NovoAgendamento = ({ userRole, onLogout }) => {
               {userRole === 'cliente' ? (
                 <input
                   type="text"
+                  name="cliente"
                   className="form-control"
-                  value="João Silva"
+                  value={formData.cliente}
                   disabled
+                  readOnly
                 />
               ) : (
                 <select
