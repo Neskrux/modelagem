@@ -153,18 +153,20 @@
         .badge-estados { background: #ffd700; color: #333; }
         .badge-atividades { background: #90ee90; color: #333; }
         .badge-navegacao { background: #87ceeb; color: #333; }
+        .badge-objetos { background: #ff6b9d; color: white; }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>📊 Sistema de Agendamento de Barbearia</h1>
-        <p class="subtitle">Documentação Completa - Todos os 8 Diagramas UML</p>
+        <p class="subtitle">Documentação Completa - Todos os 9 Diagramas UML</p>
         
         <div class="requirements-box">
             <h2>✅ Requisitos Atendidos</h2>
             <p><strong>2 Diagramas de Estados:</strong> Agendamento e Usuário (com subestados)</p>
             <p><strong>5 Diagramas de Atividades:</strong> Diferentes granularidades com paralelismo</p>
             <p><strong>1 Diagrama de Navegação:</strong> Fluxo completo entre telas</p>
+            <p><strong>1 Diagrama de Objetos:</strong> Instância específica do sistema em execução</p>
         </div>
         
         <div class="tabs">
@@ -191,6 +193,9 @@
             </button>
             <button class="tab" onclick="showDiagram(7)">
                 <span class="badge badge-navegacao">8</span> Navegação de Telas
+            </button>
+            <button class="tab" onclick="showDiagram(8)">
+                <span class="badge badge-objetos">9</span> Objetos - Agendamento
             </button>
         </div>
         
@@ -383,6 +388,72 @@ DashboardGerente --> Relatorios
 TodosAgendamentos --> Login : [Logout]
 MeusClientes --> Login : [Logout]
 Relatorios --> Login : [Logout]
+@enduml`
+            },
+            {
+                title: "Diagrama de Objetos - Instância de Agendamento",
+                code: `@startuml
+
+object carlos {
+  nome = "Carlos Silva"
+  telefone = "41 9999-0000"
+  email = "carlos@email.com"
+}
+
+object agendamento405 {
+  data = "20/11/2025"
+  horario = "15:00"
+  status = "Confirmado"
+}
+
+object smsConfirm {
+  mensagem = "Agendamento confirmado p/ dia 20!"
+  dataEnvio = "18/11/2025 14:05"
+}
+
+object corteSocial {
+  nome = "Corte Social"
+  preco = 40.00
+  duracao = "30 min"
+}
+
+object Pedro {
+  data = "20/11/2025"
+  horario = "15:00"
+  status = "Confirmado"
+}
+
+object ctrlAgendamento {
+  sessaoAtual = "Usuario: carlos"
+}
+
+carlos : Cliente
+agendamento405 : Agendamento
+smsConfirm : Notificacao
+corteSocial : Servico
+Pedro : Barbeiro
+ctrlAgendamento : ControladorAgendamento
+
+carlos --> agendamento405 : realiza
+agendamento405 --> smsConfirm : dispara
+agendamento405 --> corteSocial : contém
+Pedro --> agendamento405 : atende
+ctrlAgendamento --> agendamento405 : gerencia
+
+note right of agendamento405
+  Instância específica de um agendamento
+  confirmado para o dia 20/11/2025
+  às 15:00 horas
+end note
+
+note right of carlos
+  Cliente que realizou o agendamento
+end note
+
+note right of Pedro
+  Barbeiro responsável pelo atendimento
+end note
+
 @enduml`
             }
         ];

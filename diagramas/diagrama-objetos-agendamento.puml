@@ -1,0 +1,64 @@
+@startuml
+
+object carlos {
+  nome = "Carlos Silva"
+  telefone = "41 9999-0000"
+  email = "carlos@email.com"
+}
+
+object agendamento405 {
+  data = "20/11/2025"
+  horario = "15:00"
+  status = "Confirmado"
+}
+
+object smsConfirm {
+  mensagem = "Agendamento confirmado p/ dia 20!"
+  dataEnvio = "18/11/2025 14:05"
+}
+
+object corteSocial {
+  nome = "Corte Social"
+  preco = 40.00
+  duracao = "30 min"
+}
+
+object Pedro {
+  data = "20/11/2025"
+  horario = "15:00"
+  status = "Confirmado"
+}
+
+object ctrlAgendamento {
+  sessaoAtual = "Usuario: carlos"
+}
+
+carlos : Cliente
+agendamento405 : Agendamento
+smsConfirm : Notificacao
+corteSocial : Servico
+Pedro : Barbeiro
+ctrlAgendamento : ControladorAgendamento
+
+carlos --> agendamento405 : realiza
+agendamento405 --> smsConfirm : dispara
+agendamento405 --> corteSocial : contém
+Pedro --> agendamento405 : atende
+ctrlAgendamento --> agendamento405 : gerencia
+
+note right of agendamento405
+  Instância específica de um agendamento
+  confirmado para o dia 20/11/2025
+  às 15:00 horas
+end note
+
+note right of carlos
+  Cliente que realizou o agendamento
+end note
+
+note right of Pedro
+  Barbeiro responsável pelo atendimento
+end note
+
+@enduml
+
